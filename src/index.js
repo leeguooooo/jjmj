@@ -60,34 +60,47 @@ async function dispatchFriendFilterByMsgType(that, msg) {
  */
 async function dispatchRoomFilterByMsgType(that, room, msg) {
   const contact = msg.talker() // 发消息人
-  const contactName = contact.name()
+  const roomAlias = await room.alias(contact)
+  const contactName = roomAlias || contact.name()
   const roomName = await room.topic()
   const type = msg.type()
-  const userName = await contact.name()
   const userSelfName = that.userSelf().name()
   const id = await contact.id
-  const rooms = [room]
-  // console.log('config: ', config, config.allowRoom, contact)
-  console.log(config.allowRoom)
-  config.allowRoom.forEach(async (r) => {
-    const a = await that.Room.find({ topic: r })
-    // console.log(a, r)
-    rooms.push(a)
-  })
-  console.log(rooms)
+
+  // 查找用户
+  const guoli = await that.Contact.find({ name: '郭立Lee' })
+
+  // const rooms = []
+  // // console.log('config: ', config, config.allowRoom, contact)
+  // console.log(config.allowRoom)
+  // config.allowRoom.forEach(async (r) => {
+  //   const a = await that.Room.find({ topic: r })
+  //   // console.log(a, r)
+  //   rooms.push(a)
+  // })
+
+  contactSay(guoli, { type: 1, content: `「${contactName}」在「${roomName}」群里说：` }).then(() => msg.forward(guoli, { room: '群[$ROOM]', custom: '转发消息来自 $ROOM$USER' }))
+
+  if (!roomName.includes('季景铭郡业主')) {
+    return
+  }
+  let rooms = await that.Room.findAll({ topic: /季景铭郡业主*/ })
+  rooms = rooms.filter((v) => v.payload.topic !== roomName)
   switch (type) {
     case that.Message.Type.Text:
       content = msg.text()
       console.log(`群名: ${roomName} 发消息人: ${contactName} 内容: ${content} ${room?.id}`)
-      if (config.allowRoom.includes(roomName)) {
-        await roomsSay(rooms, contact, { type: 1, content: `「${contactName}」在「${roomName}」群里说：\n\n ${content}` })
-        // const mentionSelf = content.includes(`@${userSelfName}`)
-        // if (mentionSelf) {
-        //   content = content.replace(/@[^,，：:\s@]+/g, '').trim()
-        //   console.log(content)
-        //   if (content) {
-        //     await roomsSay(rooms, contact, `[${contactName}@${roomName}]：${content}`)
-        //   }
+      // if (config.allowRoom.includes(roomName)) {
+      // await roomsSay(rooms, contact, { type: 1, content: `「${contactName}」在「${roomName}」群里说：\n\n ${content}` })
+      const mentionSelf = content.includes(`@${userSelfName}`)
+      console.log(userSelfName, mentionSelf)
+      if (mentionSelf) {
+        content = content.replace(/@[^,，：:\s@]+/g, '').trim()
+        console.log(content)
+        if (content) {
+          await roomsSay(rooms, contact, { type: 1, content: `「${contactName}」在「${roomName}」群里说：\n\n ${content}` })
+          // await roomsSay(rooms, contact, `[${contactName}@${roomName}]：${content}`)
+        }
         // }
       }
       break
@@ -164,7 +177,7 @@ module.exports = function WechatyFaceCartonPlugin({ secretId = '', secretKey = '
     tipsword,
   }
   return function (bot) {
-    console.log('启动微信机器人', quickModel)
+    console.log('启动微信机器人', quickModel, onMessage)
     bot.on('message', onMessage)
     // 如果用户开启快速体验模式，帮助用户监听扫码事件，直接把二维码显示在控制台
     if (quickModel) {

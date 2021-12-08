@@ -112,6 +112,7 @@ async function roomSay(room, contact, msg) {
  *  type 1 文字 2 图片url 3 图片base64 4 url链接 5 小程序  6 名片
  */
 async function contactSay(contact, msg, isRoom = false) {
+  console.log(msg)
   try {
     if (msg.type === 1 && msg.content) {
       // 文字
@@ -152,6 +153,7 @@ async function contactSay(contact, msg, isRoom = false) {
   } catch (e) {
     console.log('私聊发送消息失败', msg, e)
   }
+  return Promise.resolve()
 }
 
 module.exports = {
